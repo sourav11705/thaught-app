@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discover Your Kin - Home</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overflow-x: hidden; /* Prevent horizontal scroll */
+        }
+        /* Custom animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-purple-500 to-indigo-600 min-h-screen text-white flex items-center justify-center">
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
+        <div class="text-center p-8 bg-white bg-opacity-20 rounded-xl shadow-2xl">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+            <p class="text-lg font-semibold">Loading...</p>
+        </div>
+    </div>
+
+    <!-- Message Box Overlay -->
+    <div id="message-box" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
+        <div class="bg-white text-gray-800 p-6 rounded-lg shadow-xl max-w-sm w-full text-center">
+            <p id="message-text" class="text-lg font-semibold mb-4"></p>
+            <button id="message-ok-button" class="bg-indigo-600 text-white py-2 px-5 rounded-md hover:bg-indigo-700 transition">OK</button>
+        </div>
+    </div>
+
+    <!-- Home Page (Slideshow) Content -->
+    <section id="home-page-content" class="flex-col items-center justify-center min-h-screen p-4 active">
+        <div class="bg-white bg-opacity-20 p-8 rounded-xl shadow-2xl text-center max-w-md w-full animate-fade-in">
+            <h1 id="slideshow-title" class="text-4xl font-extrabold mb-4"></h1>
+            <p id="slideshow-description" class="text-lg mb-8"></p>
+            <button id="get-started-button"
+                class="bg-white text-indigo-700 font-bold py-3 px-8 rounded-full shadow-lg hover:bg-indigo-100 transform hover:scale-105 transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-300">
+                Get Started
+            </button>
+        </div>
+    </section>
+
+    <script>
+        // Utility functions for UI
+        const showLoading = () => document.getElementById('loading-overlay').classList.remove('hidden');
+        const hideLoading = () => document.getElementById('loading-overlay').classList.add('hidden');
+
+        const showMessage = (msg, type = 'info') => {
+            const msgBox = document.getElementById('message-box');
+            const msgText = document.getElementById('message-text');
+            msgText.textContent = msg;
+            msgBox.classList.remove('hidden');
+        };
+        const hideMessage = () => document.getElementById('message-box').classList.add('hidden');
+        document.getElementById('message-ok-button').addEventListener('click', hideMessage);
+
+        // --- Slideshow Logic ---
+        const slideshowContent = [
+            { title: "Welcome to Discover Your Kin!", description: "Find people who share your unique thoughts and life experiences." },
+            { title: "How it Works: Profile", description: "Start by creating your profile. We'll ask for some basic details and your preferred social media." },
+            { title: "How it Works: Questionnaire", description: "Answer a series of thought-provoking questions about your past, values, and thinking process." },
+            { title: "One-to-One Comparison", description: "Get an instant similarity score with a randomly matched individual. Easily share the unique bond you've discovered!" },
+            { title: "Global Discoveries", description: "Explore the wider community and see how your unique thought process aligns with others. Find highly similar minds and connect directly through their shared social media profiles!" }
+        ];
+        let currentSlideIndex = 0;
+        let slideshowInterval;
+
+        const updateSlideshow = () => {
+            document.getElementById('slideshow-title').textContent = slideshowContent[currentSlideIndex].title;
+            document.getElementById('slideshow-description').textContent = slideshowContent[currentSlideIndex].description;
+            currentSlideIndex = (currentSlideIndex + 1) % slideshowContent.length;
+        };
+
+        // --- Initialization ---
+        window.onload = () => {
+            // Start slideshow
+            updateSlideshow();
+            slideshowInterval = setInterval(updateSlideshow, 5000);
+
+            document.getElementById('get-started-button').addEventListener('click', () => {
+                clearInterval(slideshowInterval); // Stop slideshow
+                // Check if user already has a profile and answers
+                if (localStorage.getItem('userId') && localStorage.getItem('userProfile') && localStorage.getItem('userAnswers')) {
+                    window.location.href = '/comparison.html'; // Go to the new comparison hub if everything is setup
+                } else if (localStorage.getItem('userId') && localStorage.getItem('userProfile')) {
+                    window.location.href = '/questionnaire.html'; // Go to questionnaire if profile exists
+                } else {
+                    window.location.href = '/profile.html'; // Start with profile if new user
+                }
+            });
+        };
+    </script>
+</body>
+</html>

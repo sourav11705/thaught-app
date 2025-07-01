@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discover Your Kin - Global Comparison</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overflow-x: hidden; /* Prevent horizontal scroll */
+        }
+        /* Custom animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-purple-500 to-indigo-600 min-h-screen text-white flex items-center justify-center">
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
+        <div class="text-center p-8 bg-white bg-opacity-20 rounded-xl shadow-2xl">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+            <p class="text-lg font-semibold">Loading...</p>
+        </div>
+    </div>
+
+    <!-- Message Box Overlay -->
+    <div id="message-box" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
+        <div class="bg-white text-gray-800 p-6 rounded-lg shadow-xl max-w-sm w-full text-center">
+            <p id="message-text" class="text-lg font-semibold mb-4"></p>
+            <button id="message-ok-button" class="bg-indigo-600 text-white py-2 px-5 rounded-md hover:bg-indigo-700 transition">OK</button>
+        </div>
+    </div>
+
+    <!-- Global Comparison Page Content -->
+    <section id="global-page-content" class="flex-col items-center min-h-screen p-4">
+        <div class="bg-white bg-opacity-20 p-8 rounded-xl shadow-2xl max-w-3xl w-full my-8 animate-fade-in">
+            <h2 class="text-3xl font-bold mb-4 text-center">Global Comparisons</h2>
+            <p class="text-lg text-gray-200 mb-6">
+                This section helps you discover individuals across our community who share profound similarities with you.
+                Explore how your unique thought patterns align with others. If a match exceeds 90% similarity, their public
+                social media ID will be displayed, enabling you to connect directly and forge new connections based on deep understanding.
+            </p>
+            <div class="mb-6 flex justify-center space-x-4 flex-wrap gap-2">
+                <button class="filter-gender-button bg-indigo-700 text-white font-bold py-2 px-4 rounded-full shadow-md hover:bg-indigo-800 transition duration-300" data-gender="both">All Users</button>
+                <button class="filter-gender-button bg-indigo-700 text-white font-bold py-2 px-4 rounded-full shadow-md hover:bg-indigo-800 transition duration-300" data-gender="Male">Males</button>
+                <button class="filter-gender-button bg-indigo-700 text-white font-bold py-2 px-4 rounded-full shadow-md hover:bg-indigo-800 transition duration-300" data-gender="Female">Females</button>
+                <button class="filter-gender-button bg-indigo-700 text-white font-bold py-2 px-4 rounded-full shadow-md hover:bg-indigo-800 transition duration-300" data-gender="Other">Other Genders</button>
+                <button class="filter-gender-button bg-indigo-700 text-white font-bold py-2 px-4 rounded-full shadow-md hover:bg-indigo-800 transition duration-300" data-gender="Prefer not to say">Prefer not to say</button>
+            </div>
+            <div id="global-results-container" class="space-y-4">
+                <!-- Global comparison results will be inserted here -->
+            </div>
+            <p id="global-message" class="text-lg text-center mt-4"></p>
+            <div class="mt-8 text-center">
+                <button id="back-to-one-to-one-button"
+                    class="bg-white text-indigo-700 font-bold py-3 px-6 rounded-full shadow-lg hover:bg-indigo-100 transform hover:scale-105 transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-300">
+                    Back to One-to-One
+                </button>
+                <button id="back-to-home-from-global"
+                    class="bg-gray-500 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-gray-600 transform hover:scale-105 transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-300">
+                    Back to Home
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:5000/api'; // Ensure this matches your Flask backend URL
+
+        // Utility functions for UI
+        const showLoading = () => document.getElementById('loading-overlay').classList.remove('hidden');
+        const hideLoading = () => document.getElementById('loading-overlay').classList.add('hidden');
+
+        const showMessage = (msg, type = 'info') => {
+            const msgBox = document.getElementById('message-box');
+            const msgText = document.getElementById('message-text');
+            msgText.textContent = msg;
+            msgBox.classList.remove('hidden');
+        };
+        const hideMessage = () => document.getElementById('message-box').classList.add('hidden');
+        document.getElementById('message-ok-button').addEventListener('click', hideMessage);
+
+        // --- Global State Variables (loaded from localStorage) ---
+        let currentUserId = localStorage.getItem('userId') || null;
+        let userAnswers = JSON.parse(localStorage.getItem('userAnswers')) || {};
+
+        // --- Global Comparison Logic ---
+        const globalResultsContainer = document.getElementById('global-results-container');
+        const globalMessage = document.getElementById('global-message');
+
+        const performGlobalComparison = async (genderFilter = 'both') => {
+            showLoading();
+            globalResultsContainer.innerHTML = ''; // Clear previous results
+            globalMessage.textContent = '';
+
+            if (!currentUserId || !localStorage.getItem('userProfile') || Object.keys(userAnswers).length === 0) {
+                globalMessage.textContent = "Please complete your profile and questionnaire to view global comparisons.";
+                hideLoading();
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/global_compare`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: currentUserId, genderFilter: genderFilter })
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    if (result.results && result.results.length > 0) {
+                        result.results.forEach(res => {
+                            const resultDiv = document.createElement('div');
+                            resultDiv.className = 'bg-white bg-opacity-10 p-4 rounded-lg flex justify-between items-center animate-fade-in';
+                            let socialMediaHtml = '';
+                            if (parseFloat(res.percentage) >= 90 && res.socialMediaId) {
+                                socialMediaHtml = `<p class="text-md text-green-300 font-semibold mt-1">Connect on ${res.socialMediaPlatform}: <span class="font-semibold">${res.socialMediaId}</span></p>`;
+                            }
+                            resultDiv.innerHTML = `
+                                <div>
+                                    <p class="text-xl font-semibold">${res.name}</p>
+                                    <p class="text-sm text-gray-200">Gender: ${res.gender}</p>
+                                    <p class="text-xs text-gray-300 break-all">User ID: ${res.userId}</p>
+                                    ${socialMediaHtml}
+                                </div>
+                                <p class="text-2xl font-bold text-green-300">${res.percentage}%</p>
+                            `;
+                            globalResultsContainer.appendChild(resultDiv);
+                        });
+                    } else {
+                        globalMessage.textContent = result.message || "No global comparison results found matching your criteria. Keep an eye on this page for potential matches!";
+                    }
+                } else {
+                    globalMessage.textContent = result.error || 'Failed to fetch global comparisons.';
+                }
+            } catch (error) {
+                console.error('Error fetching global comparisons:', error);
+                globalMessage.textContent = 'Network error or server unavailable.';
+            } finally {
+                hideLoading();
+            }
+        };
+
+        // --- Event Listeners ---
+        document.querySelectorAll('.filter-gender-button').forEach(button => {
+            button.addEventListener('click', (e) => {
+                performGlobalComparison(e.target.dataset.gender);
+            });
+        });
+
+        document.getElementById('back-to-one-to-one-button').addEventListener('click', () => {
+            window.location.href = '/one_to_one.html';
+        });
+        document.getElementById('back-to-home-from-global').addEventListener('click', () => {
+            window.location.href = '/index.html';
+        });
+
+        // --- Initialization on page load ---
+        window.onload = () => {
+            if (!currentUserId || !localStorage.getItem('userProfile') || Object.keys(userAnswers).length === 0) {
+                if (!localStorage.getItem('userProfile')) {
+                    window.location.href = '/profile.html';
+                } else {
+                    window.location.href = '/questionnaire.html';
+                }
+                return;
+            }
+            performGlobalComparison('both'); // Perform initial global comparison on load
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discover Your Kin - Comparison Options</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overflow-x: hidden; /* Prevent horizontal scroll */
+        }
+        /* Custom animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+        /* Modal styles (kept for consistency in utility functions, but not used by this page anymore) */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            max-width: 90%;
+            width: 400px;
+            color: #333;
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-purple-500 to-indigo-600 min-h-screen text-white flex items-center justify-center">
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
+        <div class="text-center p-8 bg-white bg-opacity-20 rounded-xl shadow-2xl">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+            <p class="text-lg font-semibold">Loading...</p>
+        </div>
+    </div>
+
+    <!-- Message Box Overlay -->
+    <div id="message-box" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
+        <div class="bg-white text-gray-800 p-6 rounded-lg shadow-xl max-w-sm w-full text-center">
+            <p id="message-text" class="text-lg font-semibold mb-4"></p>
+            <button id="message-ok-button" class="bg-indigo-600 text-white py-2 px-5 rounded-md hover:bg-indigo-700 transition">OK</button>
+        </div>
+    </div>
+
+    <!-- Share Options Modal (Removed from this page, but keeping the div structure commented out for reference if needed) -->
+    <!--
+    <div id="share-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 class="text-2xl font-bold mb-4">Share Your Profile for Comparison</h3>
+            <p class="mb-6">Copy this link and share it with a friend! When they click it and complete their own profile/questionnaire, they'll see how similar you are.</p>
+            <div class="flex flex-col space-y-3">
+                <input type="text" id="share-link-input" readonly class="w-full p-3 rounded-md bg-gray-100 text-gray-800 border border-gray-300 mb-4 text-center">
+                <button id="share-whatsapp" class="bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 transition">Share on WhatsApp</button>
+                <button id="share-twitter" class="bg-blue-400 text-white py-2 px-4 rounded-md hover:bg-blue-500 transition">Share on Twitter</button>
+                <button id="share-linkedin" class="bg-blue-700 text-white py-2 px-4 rounded-md hover:bg-blue-800 transition">Share on LinkedIn</button>
+                <button id="share-copy-link" class="bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300 transition">Copy Link</button>
+                <button id="close-share-modal" class="bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 transition mt-4">Close</button>
+            </div>
+        </div>
+    </div>
+    -->
+
+    <!-- Comparison Options Content -->
+    <section id="comparison-options-content" class="flex-col items-center justify-center min-h-screen p-4">
+        <div class="bg-white bg-opacity-20 p-8 rounded-xl shadow-2xl max-w-md w-full text-center animate-fade-in">
+            <h2 class="text-3xl font-bold mb-4">Discover Your Kin!</h2>
+            <p class="text-lg text-gray-200 mb-8">You've completed your profile and questionnaire! Now, choose how you'd like to discover your kin.</p>
+            
+            <div class="flex flex-col space-y-4">
+                <button id="share-my-profile-button"
+                    class="bg-green-500 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-green-600 transform hover:scale-105 transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-300">
+                    Share My Profile for One-to-One
+                </button>
+                <button id="view-global-matches-button"
+                    class="bg-purple-600 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-purple-700 transform hover:scale-105 transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-300">
+                    View Global Matches
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // Utility functions for UI
+        const showLoading = () => document.getElementById('loading-overlay').classList.remove('hidden');
+        const hideLoading = () => document.getElementById('loading-overlay').classList.add('hidden');
+
+        const showMessage = (msg, type = 'info') => {
+            const msgBox = document.getElementById('message-box');
+            const msgText = document.getElementById('message-text');
+            msgText.textContent = msg;
+            msgBox.classList.remove('hidden');
+        };
+        const hideMessage = () => document.getElementById('message-box').classList.add('hidden');
+        document.getElementById('message-ok-button').addEventListener('click', hideMessage);
+
+        // --- Global State Variables (loaded from localStorage) ---
+        let currentUserId = localStorage.getItem('userId') || null;
+        let userProfile = JSON.parse(localStorage.getItem('userProfile')) || null;
+        let userAnswers = JSON.parse(localStorage.getItem('userAnswers')) || {};
+        let userImageDescription = localStorage.getItem('userImageDescription') || null; // New
+        let userFavorites = JSON.parse(localStorage.getItem('userFavorites')) || null; // New
+
+        // --- Event Listeners ---
+        document.getElementById('share-my-profile-button').addEventListener('click', () => {
+            // Directly navigate to one_to_one.html
+            window.location.href = '/one_to_one.html';
+        });
+
+        document.getElementById('view-global-matches-button').addEventListener('click', () => {
+            window.location.href = '/global_compare.html'; // Navigate to global comparison page
+        });
+
+        // --- Initialization on page load ---
+        window.onload = () => {
+            // Ensure user has completed profile, questionnaire, image description, and favorites
+            if (!currentUserId || !userProfile || Object.keys(userAnswers).length === 0 || !userImageDescription || !userFavorites) {
+                if (!userProfile) {
+                    window.location.href = '/profile.html';
+                } else if (Object.keys(userAnswers).length === 0) {
+                    window.location.href = '/questionnaire.html';
+                } else if (!userImageDescription) { // Check for image description
+                    window.location.href = '/image_description.html';
+                } else { // If favorites are missing
+                    window.location.href = '/favorites.html';
+                }
+                return;
+            }
+        };
+    </script>
+</body>
+</html>

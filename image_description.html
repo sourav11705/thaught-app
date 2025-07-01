@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discover Your Kin - Image Description</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overflow-x: hidden; /* Prevent horizontal scroll */
+        }
+        /* Custom animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-purple-500 to-indigo-600 min-h-screen text-white flex items-center justify-center">
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
+        <div class="text-center p-8 bg-white bg-opacity-20 rounded-xl shadow-2xl">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+            <p class="text-lg font-semibold">Loading...</p>
+        </div>
+    </div>
+
+    <!-- Message Box Overlay -->
+    <div id="message-box" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
+        <div class="bg-white text-gray-800 p-6 rounded-lg shadow-xl max-w-sm w-full text-center">
+            <p id="message-text" class="text-lg font-semibold mb-4"></p>
+            <button id="message-ok-button" class="bg-indigo-600 text-white py-2 px-5 rounded-md hover:bg-indigo-700 transition">OK</button>
+        </div>
+    </div>
+
+    <!-- Image Description Page Content -->
+    <section id="image-description-page-content" class="flex-col items-center min-h-screen p-4">
+        <div class="bg-white bg-opacity-20 p-8 rounded-xl shadow-2xl max-w-2xl w-full my-8 animate-fade-in">
+            <h2 class="text-3xl font-bold mb-6 text-center">Describe What You See</h2>
+            <p class="text-lg mb-6 text-center">
+                Look closely at the image below. Describe in a few sentences what you perceive,
+                focusing on your initial impression and any details that stand out to you.
+            </p>
+            <div class="flex justify-center mb-6">
+                <!-- IMPORTANT: Replace 'YOUR_GITHUB_IMAGE_URL_HERE' with the direct URL to your image on GitHub -->
+                <img src="https://github.com/sourav11705/web_app/blob/main/ChatGPT%20Image%20Jul%201,%202025,%2010_48_34%20PM.png?raw=true" alt="Optical Illusion" class="rounded-lg shadow-lg max-w-full h-auto" onerror="this.onerror=null;this.src='https://placehold.co/400x300/CCCCCC/000000?text=Image+Not+Loaded'; console.error('Failed to load image from GitHub. Using fallback placeholder.');">
+            </div>
+            <p class="text-sm text-center text-gray-300 mb-6">
+                <span class="font-bold">If the image above still doesn't load:</span> Please describe what you know about optical illusions, or what you perceive in the placeholder image (e.g., a grey box with "Image Not Loaded").
+            </p>
+            <form id="image-description-form" class="space-y-4">
+                <div>
+                    <label for="imageDescription" class="block text-sm font-medium mb-1">Your Description</label>
+                    <textarea id="imageDescription" rows="5"
+                        class="w-full p-3 rounded-md bg-white bg-opacity-30 border border-white border-opacity-50 placeholder-gray-200 focus:ring-2 focus:ring-indigo-300 focus:border-transparent outline-none"
+                        placeholder="e.g., 'I see two faces looking at each other, but also a vase in the middle.'" required></textarea>
+                </div>
+                <button type="submit" id="submit-image-description-button"
+                    class="w-full bg-white text-indigo-700 font-bold py-3 px-6 rounded-full shadow-lg hover:bg-indigo-100 transform hover:scale-105 transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-300 mt-6">
+                    Submit Description & Continue
+                </button>
+            </form>
+            <p id="image-description-message" class="mt-4 text-center text-yellow-200"></p>
+        </div>
+    </section>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:5000/api'; // Ensure this matches your Flask backend URL
+
+        // Utility functions for UI
+        const showLoading = () => document.getElementById('loading-overlay').classList.remove('hidden');
+        const hideLoading = () => document.getElementById('loading-overlay').classList.add('hidden');
+
+        const showMessage = (msg, type = 'info') => {
+            const msgBox = document.getElementById('message-box');
+            const msgText = document.getElementById('message-text');
+            msgText.textContent = msg;
+            msgBox.classList.remove('hidden');
+        };
+        const hideMessage = () => document.getElementById('message-box').classList.add('hidden');
+        document.getElementById('message-ok-button').addEventListener('click', hideMessage);
+
+        // --- Global State Variables (loaded from localStorage) ---
+        let currentUserId = localStorage.getItem('userId') || null;
+        let userImageDescription = localStorage.getItem('userImageDescription') || '';
+
+        // --- Image Description Logic ---
+        document.getElementById('image-description-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            showLoading();
+            document.getElementById('image-description-message').textContent = '';
+
+            const imageDescription = document.getElementById('imageDescription').value.trim();
+
+            if (!imageDescription) {
+                showMessage("Please provide a description of the image.");
+                hideLoading();
+                return;
+            }
+
+            if (!currentUserId) {
+                showMessage("User ID not found. Please complete your profile first.");
+                hideLoading();
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/save_image_description`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: currentUserId,
+                        imageDescription: imageDescription
+                    })
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    localStorage.setItem('userImageDescription', imageDescription);
+                    showMessage('Image description saved successfully!');
+                    // Navigate to the next round: Favorites
+                    window.location.href = '/favorites.html';
+                } else {
+                    showMessage(`Error: ${result.error || 'Failed to save description.'}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error saving image description:', error);
+                showMessage('Network error or server unavailable.', 'error');
+            } finally {
+                hideLoading();
+            }
+        });
+
+        // Populate form if data exists in localStorage on page load
+        window.onload = () => {
+            if (!currentUserId || !localStorage.getItem('userProfile') || !localStorage.getItem('userAnswers')) {
+                // If profile or questionnaire is not complete, redirect
+                if (!localStorage.getItem('userProfile')) {
+                    window.location.href = '/profile.html';
+                } else {
+                    window.location.href = '/questionnaire.html';
+                }
+                return;
+            }
+            document.getElementById('imageDescription').value = userImageDescription;
+        };
+    </script>
+</body>
+</html>

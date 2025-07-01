@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discover Your Kin - One-to-One Comparison</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overflow-x: hidden; /* Prevent horizontal scroll */
+        }
+        /* Custom animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+        /* Modal styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            max-width: 90%;
+            width: 400px;
+            color: #333;
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-purple-500 to-indigo-600 min-h-screen text-white flex items-center justify-center">
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
+        <div class="text-center p-8 bg-white bg-opacity-20 rounded-xl shadow-2xl">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+            <p class="text-lg font-semibold">Loading...</p>
+        </div>
+    </div>
+
+    <!-- Message Box Overlay -->
+    <div id="message-box" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
+        <div class="bg-white text-gray-800 p-6 rounded-lg shadow-xl max-w-sm w-full text-center">
+            <p id="message-text" class="text-lg font-semibold mb-4"></p>
+            <button id="message-ok-button" class="bg-indigo-600 text-white py-2 px-5 rounded-md hover:bg-indigo-700 transition">OK</button>
+        </div>
+    </div>
+
+    <!-- Share Options Modal -->
+    <div id="share-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 class="text-2xl font-bold mb-4">Share This Comparison</h3>
+            <p class="mb-6">Share your unique similarity with a friend!</p>
+            <div class="flex flex-col space-y-3">
+                <input type="text" id="share-link-input" readonly class="w-full p-3 rounded-md bg-gray-100 text-gray-800 border border-gray-300 mb-4 text-center">
+                <button id="share-whatsapp" class="bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 transition">Share on WhatsApp</button>
+                <button id="share-twitter" class="bg-blue-400 text-white py-2 px-4 rounded-md hover:bg-blue-500 transition">Share on Twitter</button>
+                <button id="share-linkedin" class="bg-blue-700 text-white py-2 px-4 rounded-md hover:bg-blue-800 transition">Share on LinkedIn</button>
+                <button id="share-copy-link" class="bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300 transition">Copy Link</button>
+                <button id="close-share-modal" class="bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 transition mt-4">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- One-to-One Comparison Page Content -->
+    <section id="one-to-one-page-content" class="flex-col items-center justify-center min-h-screen p-4">
+        <div class="bg-white bg-opacity-20 p-8 rounded-xl shadow-2xl max-w-md w-full text-center animate-fade-in">
+            <h2 class="text-3xl font-bold mb-4" id="one-to-one-title">One-to-One Comparison</h2>
+            <p class="text-lg text-gray-200 mb-6">Discover your similarity with another user!</p>
+            <div id="one-to-one-content">
+                <p class="text-xl mb-4">Loading comparison...</p>
+            </div>
+            <p id="one-to-one-message" class="text-lg"></p>
+            <div class="flex flex-col space-y-4 mt-6">
+                <!-- Removed "Find Another Match" button -->
+                <button id="share-comparison-button" disabled
+                    class="bg-green-500 text-white font-bold py-3 px-6 rounded-full shadow-lg opacity-50 cursor-not-allowed">
+                    Share This Comparison
+                </button>
+                <!-- Removed "View Global Matches" button -->
+                <button id="back-to-home-from-one-to-one"
+                    class="bg-gray-500 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-gray-600 transform hover:scale-105 transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-gray-300">
+                    Back to Home
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:5000/api'; // Ensure this matches your Flask backend URL
+
+        // Utility functions for UI
+        const showLoading = () => document.getElementById('loading-overlay').classList.remove('hidden');
+        const hideLoading = () => document.getElementById('loading-overlay').classList.add('hidden');
+
+        const showMessage = (msg, type = 'info') => {
+            console.log(`[showMessage] Type: ${type}, Message: ${msg}`); // Debugging log
+            const msgBox = document.getElementById('message-box');
+            const msgText = document.getElementById('message-text');
+            msgText.textContent = msg;
+            msgBox.classList.remove('hidden');
+        };
+        const hideMessage = () => document.getElementById('message-box').classList.add('hidden');
+        document.getElementById('message-ok-button').addEventListener('click', hideMessage);
+
+        // Share Modal elements
+        const shareModal = document.getElementById('share-modal');
+        const closeShareModalButton = document.getElementById('close-share-modal');
+        const shareWhatsappButton = document.getElementById('share-whatsapp');
+        const shareTwitterButton = document.getElementById('share-twitter');
+        const shareLinkedinButton = document.getElementById('share-linkedin');
+        const shareCopyLinkButton = document.getElementById('share-copy-link');
+        const shareLinkInput = document.getElementById('share-link-input'); // Added for share modal
+
+        // --- Global State Variables (loaded from localStorage) ---
+        let currentUserId = localStorage.getItem('userId') || null;
+        let userAnswers = JSON.parse(localStorage.getItem('userAnswers')) || {};
+        let currentComparisonOtherUserId = null; // To store the ID of the person compared for sharing
+        let currentComparisonPercentage = 0; // To store the percentage for sharing message
+        let currentComparisonOtherUserName = ''; // To store the other user's name for sharing message
+
+        // --- One-to-One Comparison Logic ---
+        const oneToOneContentDiv = document.getElementById('one-to-one-content');
+        const oneToOneMessageDiv = document.getElementById('one-to-one-message');
+        const shareComparisonButton = document.getElementById('share-comparison-button');
+        const backToHomeButton = document.getElementById('back-to-home-from-one-to-one');
+
+        // Function to update share button state
+        const updateShareButtonState = () => {
+            // The share button should be enabled if the current user has a profile and answers,
+            // regardless of whether a specific comparison result is currently displayed.
+            // If a comparison result is displayed, it will share that specific comparison.
+            // If not, it will share the current user's profile link for others to compare.
+            if (currentUserId && Object.keys(userAnswers).length > 0) {
+                shareComparisonButton.disabled = false;
+                shareComparisonButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                shareComparisonButton.classList.add('hover:bg-green-600', 'transform', 'scale-105', 'transition', 'duration-300', 'ease-in-out', 'focus:outline-none', 'focus:ring-2', 'focus:ring-green-300');
+            } else {
+                shareComparisonButton.disabled = true;
+                shareComparisonButton.classList.add('opacity-50', 'cursor-not-allowed');
+                shareComparisonButton.classList.remove('hover:bg-green-600', 'transform', 'scale-105', 'transition', 'duration-300', 'ease-in-out', 'focus:outline-none', 'focus:ring-2', 'focus:ring-green-300');
+            }
+        };
+
+        const displaySharePrompt = () => {
+            document.getElementById('one-to-one-title').textContent = 'Share Your Profile';
+            oneToOneContentDiv.innerHTML = `
+                <p class="text-xl mb-4">Share your profile with friends to see how similar you are!</p>
+            `;
+            oneToOneMessageDiv.textContent = '';
+            updateShareButtonState(); // Ensure share button state is correct
+        };
+
+        const performOneToOneComparison = async (targetUserId = null, user1IdForShared = null) => {
+            console.log(`[performOneToOneComparison] Initiating comparison. currentUserId: ${currentUserId}, targetUserId: ${targetUserId}, user1IdForShared: ${user1IdForShared}`); // Debugging log
+            showLoading();
+            oneToOneMessageDiv.textContent = '';
+            oneToOneContentDiv.innerHTML = '<p class="text-xl mb-4">Finding your match...</p>'; // Indicate loading
+            
+            // Reset share state for the *current* comparison
+            currentComparisonOtherUserId = null;
+            currentComparisonPercentage = 0;
+            currentComparisonOtherUserName = '';
+            updateShareButtonState(); // Update button state based on the current comparison being reset
+
+            if (!currentUserId) {
+                showMessage("User not authenticated. Please complete profile and questionnaire first.");
+                hideLoading();
+                return;
+            }
+
+            let payload = { user1Id: user1IdForShared, user2Id: targetUserId };
+            document.getElementById('one-to-one-title').textContent = 'Shared Comparison';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/one_to_one_compare`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                console.log('[performOneToOneComparison] Backend response:', result); // Debugging log
+
+                if (response.ok) {
+                    if (result.percentage !== undefined) {
+                        currentComparisonOtherUserId = result.otherUserId || targetUserId; // Store for sharing
+                        currentComparisonPercentage = parseFloat(result.percentage); // Store percentage
+                        currentComparisonOtherUserName = result.otherUserName || 'Another User'; // Store other user's name
+
+                        console.log(`[DEBUG SHARE] currentComparisonOtherUserId: ${currentComparisonOtherUserId}`);
+                        console.log(`[DEBUG SHARE] currentComparisonPercentage: ${currentComparisonPercentage}`);
+                        console.log(`[DEBUG SHARE] currentComparisonOtherUserName: ${currentComparisonOtherUserName}`);
+
+                        let displayNames;
+                        let displaySocialMedia = '';
+                        let displayUserIds;
+
+                        // Always ensure displayNames are correct for shared comparison
+                        displayNames = `${result.user1Name || 'User 1'} vs ${result.otherUserName || 'User 2'}`;
+                        displayUserIds = `User IDs: ${user1IdForShared} & ${targetUserId}`;
+                        
+                        // Only show social media if the percentage is high enough and ID exists
+                        if (parseFloat(result.percentage) >= 90 && result.otherSocialMediaId) {
+                            displaySocialMedia = `<p class="text-md text-gray-200 mb-2">Connect on ${result.otherSocialMediaPlatform}: <span class="font-semibold">${result.otherSocialMediaId}</span></p>`;
+                        }
+
+
+                        oneToOneContentDiv.innerHTML = `
+                            <p class="text-xl mb-4">You are <span class="text-green-300 font-extrabold text-4xl">${result.percentage}%</span> similar to <span class="font-bold">${displayNames}</span>!</p>
+                            ${displaySocialMedia}
+                            <p class="text-sm text-gray-200 mb-6 break-all">${displayUserIds}</p>
+                        `;
+                        updateShareButtonState(); // Enable share button after successful comparison
+                    } else {
+                        // This handles cases where the backend returns a message but no percentage (e.g., no other users)
+                        oneToOneMessageDiv.textContent = result.message || "No comparison results found.";
+                        oneToOneContentDiv.innerHTML = '<p class="text-xl mb-4">No comparison found. Ensure both users have completed their questionnaires.</p>';
+                        updateShareButtonState(); // Disable share button if no match
+                    }
+                } else {
+                    // Handle specific error messages from backend, e.g., user answers not found (404)
+                    if (response.status === 404 && result.error && result.error.includes("answers not found")) {
+                        oneToOneMessageDiv.textContent = "The other user has not yet submitted their answers.";
+                        oneToOneContentDiv.innerHTML = '<p class="text-xl mb-4">Waiting for the other user to complete their questionnaire.</p>';
+                    } else {
+                        oneToOneMessageDiv.textContent = result.error || 'Failed to perform comparison.';
+                        oneToOneContentDiv.innerHTML = '<p class="text-xl mb-4">Error loading comparison. Please try again.</p>';
+                    }
+                    updateShareButtonState(); // Disable share button on error
+                }
+            } catch (error) {
+                console.error('Error during one-to-one comparison:', error);
+                oneToOneMessageDiv.textContent = 'Network error or server unavailable.';
+                oneToOneContentDiv.innerHTML = '<p class="text-xl mb-4">Network error. Please check your connection.</p>';
+                updateShareButtonState(); // Disable share button on network error
+            } finally {
+                hideLoading();
+            }
+        };
+
+        // --- Share Logic ---
+        const getShareMessage = () => {
+            // If a specific comparison is displayed, generate its link.
+            // Otherwise, generate a link for the current user's profile.
+            if (currentComparisonOtherUserId && currentComparisonPercentage > 0) {
+                 return encodeURIComponent(`Discover Your Kin! I just found out I'm ${currentComparisonPercentage}% similar to ${currentComparisonOtherUserName}! Find your kin too: ${window.location.origin}/one_to_one.html?mode=compare&user1=${currentUserId}&user2=${currentComparisonOtherUserId}`);
+            } else {
+                return encodeURIComponent(`Hey! Check out Discover Your Kin. You can compare how similar you are to me! Click here: ${window.location.origin}/one_to_one.html?mode=compare&user1=${currentUserId}`);
+            }
+        };
+
+        const openShareModal = () => {
+            console.log(`[openShareModal] currentUserId: ${currentUserId}, currentComparisonOtherUserId: ${currentComparisonOtherUserId}`); // Debugging log
+            if (!currentUserId || Object.keys(userAnswers).length === 0) {
+                showMessage("Please complete your profile and questionnaire first to generate a shareable link.");
+                return;
+            }
+            
+            // Determine the link to share
+            let linkToShare;
+            let shareTitle;
+            let shareSummary;
+
+            if (currentComparisonOtherUserId && currentComparisonPercentage > 0) {
+                // Sharing a specific comparison result
+                linkToShare = `${window.location.origin}/one_to_one.html?mode=compare&user1=${currentUserId}&user2=${currentComparisonOtherUserId}`;
+                shareTitle = `I'm ${currentComparisonPercentage}% similar to ${currentComparisonOtherUserName} on Discover Your Kin!`;
+                shareSummary = `Find out who thinks like you. Discover Your Kin helps you connect with people based on shared thoughts and experiences.`;
+            } else {
+                // Sharing your own profile link for others to compare with you
+                linkToShare = `${window.location.origin}/one_to_one.html?mode=compare&user1=${currentUserId}`;
+                shareTitle = `Discover Your Kin - Compare Your Thoughts With Me!`;
+                shareSummary = `Hey! Check out Discover Your Kin. You can compare how similar you are to me!`;
+            }
+
+            shareLinkInput.value = linkToShare;
+            shareModal.classList.remove('hidden');
+
+            // Set up social media share buttons with the determined link and message
+            shareWhatsappButton.onclick = () => {
+                window.open(`https://wa.me/?text=${encodeURIComponent(shareTitle + " " + linkToShare)}`, '_blank');
+                shareModal.classList.add('hidden');
+            };
+            shareTwitterButton.onclick = () => {
+                window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareTitle + " " + linkToShare)}`, '_blank');
+                shareModal.classList.add('hidden');
+            };
+            shareLinkedinButton.onclick = () => {
+                window.open(`https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(linkToShare)}&title=${encodeURIComponent(shareTitle)}&summary=${encodeURIComponent(shareSummary)}&source=${window.location.origin}`, '_blank');
+                shareModal.classList.add('hidden');
+            };
+        };
+
+        closeShareModalButton.addEventListener('click', () => {
+            shareModal.classList.add('hidden');
+        });
+
+        shareCopyLinkButton.addEventListener('click', () => {
+            navigator.clipboard.writeText(shareLinkInput.value)
+                .then(() => {
+                    showMessage('Link copied to clipboard!');
+                    shareModal.classList.add('hidden');
+                })
+                .catch(err => {
+                    console.error('Failed to copy text: ', err);
+                    showMessage('Failed to copy link. Please copy manually.', 'error');
+                });
+        });
+
+        // --- Event Listeners ---
+        shareComparisonButton.addEventListener('click', openShareModal);
+        backToHomeButton.addEventListener('click', () => {
+            window.location.href = '/index.html'; // Navigate back to home page
+        });
+
+        // --- Initialization on page load ---
+        window.onload = () => {
+            if (!currentUserId || !localStorage.getItem('userProfile') || Object.keys(userAnswers).length === 0) {
+                if (!localStorage.getItem('userProfile')) {
+                    window.location.href = '/profile.html';
+                } else {
+                    window.location.href = '/questionnaire.html';
+                }
+                return;
+            }
+
+            const params = new URLSearchParams(window.location.search);
+            const mode = params.get('mode');
+            const user1 = params.get('user1'); // User who generated the link (your ID)
+            const user2 = params.get('user2'); // User who clicked the link (their ID)
+
+            if (mode === 'compare' && user1 && user2) {
+                // If it's a shared comparison link, perform comparison between user1 and user2
+                // Note: The 'user1' in the URL is the person who shared their profile.
+                // The 'user2' in the URL is the person who clicked the link (the current user).
+                // We need to ensure the comparison is always from the perspective of the current user.
+                // If the current user is user1 from the URL, then the other user is user2.
+                // If the current user is user2 from the URL, then the other user is user1.
+                let compareUser1 = user1;
+                let compareUser2 = user2;
+
+                if (currentUserId === user2) { // If current user is the one who clicked the link
+                    compareUser1 = user2; // Current user
+                    compareUser2 = user1; // The person who shared
+                } else if (currentUserId !== user1) {
+                    // This scenario means the current user is neither user1 nor user2 from the link.
+                    // This could happen if someone else's link is opened by a third party.
+                    // In this case, we should prompt the user to share their own profile.
+                    displaySharePrompt();
+                    return;
+                }
+                
+                performOneToOneComparison(compareUser2, compareUser1); // Pass user1Id as the initiator of the link
+            } else {
+                // If not a shared link, display the prompt to share profile
+                displaySharePrompt();
+            }
+        };
+    </script>
+</body>
+</html>
