@@ -46,21 +46,25 @@
 
     <!-- Questionnaire Page Content -->
     <section id="questionnaire-page-content" class="flex-col items-center min-h-screen p-4">
-        <div class="bg-white bg-opacity-20 p-8 rounded-xl shadow-2xl max-w-2xl w-full my-8 animate-fade-in">
-            <h2 class="text-3xl font-bold mb-6 text-center">Tell Us About Yourself</h2>
+        <div class="bg-white bg-opacity-20 p-8 rounded-xl shadow-2xl max-w-3xl w-full my-8 animate-fade-in">
+            <h2 class="text-3xl font-bold mb-6 text-center">Your Thoughts & Beliefs</h2>
+            <p class="text-lg mb-6 text-center">
+                Answer these questions to help us understand your unique perspective.
+            </p>
             <form id="questionnaire-form" class="space-y-6">
-                <!-- Questions will be dynamically inserted here by JavaScript -->
+                <!-- Questions will be dynamically loaded here -->
             </form>
-            <button type="submit" form="questionnaire-form" id="submit-answers-button"
-                class="w-full bg-white text-indigo-700 font-bold py-3 px-6 rounded-full shadow-lg hover:bg-indigo-100 transform hover:scale-105 transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-300 mt-6">
-                Submit Answers
+            <button type="submit" id="submit-answers-button"
+                class="w-full bg-white text-indigo-700 font-bold py-3 px-6 rounded-full shadow-lg hover:bg-indigo-100 transform hover:scale-105 transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-300 mt-8">
+                Submit Answers & Continue
             </button>
             <p id="questionnaire-message" class="mt-4 text-center text-yellow-200"></p>
         </div>
     </section>
 
     <script>
-        const API_BASE_URL = 'http://localhost:5000/api'; // Ensure this matches your Flask backend URL
+        // API_BASE_URL will now dynamically adjust to the host where the page is served
+        const API_BASE_URL = window.location.origin + '/api';
 
         // Utility functions for UI
         const showLoading = () => document.getElementById('loading-overlay').classList.remove('hidden');
@@ -79,117 +83,105 @@
         let currentUserId = localStorage.getItem('userId') || null;
         let userAnswers = JSON.parse(localStorage.getItem('userAnswers')) || {};
 
-        // --- Questions Data (20 questions) ---
-        const questions = [
-            { id: 'q1', text: 'What was your family dynamic like?', type: 'multiple-choice', options: ['Supportive & Open', 'Strict & Traditional', 'Disconnected', 'Chaotic'] },
-            { id: 'q2', text: 'Did you have a significant mentor in your life?', type: 'yes-no', options: ['Yes', 'No'] },
-            { id: 'q3', text: 'Which value do you prioritize most?', type: 'multiple-choice', options: ['Honesty', 'Compassion', 'Freedom', 'Security'] },
-            { id: 'q4', text: 'Do you believe people are inherently good?', type: 'yes-no', options: ['Yes', 'No'] },
-            { id: 'q5', text: 'When solving a problem, what\'s your first step?', type: 'multiple-choice', options: ['Research', 'Brainstorm', 'Ask for help', 'Act quickly'] },
-            { id: 'q6', text: 'Do you prefer detailed plans or spontaneous action?', type: 'multiple-choice', options: ['Detailed plans', 'Spontaneous action', 'Both', 'Neither'] },
-            { id: 'q7', text: 'How do you react to criticism?', type: 'multiple-choice', options: ['Reflect & learn', 'Get defensive', 'Ignore it', 'Seek clarification'] },
-            { id: 'q8', text: 'Are you more of an introvert or an extrovert?', type: 'multiple-choice', options: ['Introvert', 'Extrovert', 'Ambivert', 'Neither'] },
-            { id: 'q9', text: 'What motivates you most?', type: 'multiple-choice', options: ['Personal growth', 'Helping others', 'Financial success', 'Recognition'] },
-            { id: 'q10', text: 'Do you believe in destiny or free will?', type: 'yes-no', options: ['Destiny', 'Free Will'] },
+        // Define the questions (MUST MATCH backend)
+        const QUESTIONS = [
+            {'id': 'q1', 'text': 'What was your family dynamic like?', 'type': 'multiple-choice', 'options': ['Supportive & Open', 'Strict & Traditional', 'Disconnected', 'Chaotic']},
+            {'id': 'q2', 'text': 'Did you have a significant mentor in your life?', 'type': 'yes-no', 'options': ['Yes', 'No']},
+            {'id': 'q3', 'text': 'Which value do you prioritize most?', 'type': 'multiple-choice', 'options': ['Honesty', 'Compassion', 'Freedom', 'Security']},
+            {'id': 'q4', 'text': 'Do you believe people are inherently good?', 'type': 'yes-no', 'options': ['Yes', 'No']},
+            {'id': 'q5', 'text': 'When solving a problem, what\'s your first step?', 'type': 'multiple-choice', 'options': ['Research', 'Brainstorm', 'Ask for help', 'Act quickly']},
+            {'id': 'q6', 'text': 'Do you prefer detailed plans or spontaneous action?', 'type': 'multiple-choice', 'options': ['Detailed plans', 'Spontaneous action', 'Both', 'Neither']},
+            {'id': 'q7', 'text': 'How do you react to criticism?', 'type': 'multiple-choice', 'options': ['Reflect & learn', 'Get defensive', 'Ignore it', 'Seek clarification']},
+            {'id': 'q8', 'text': 'Are you more of an introvert or an extrovert?', 'type': 'multiple-choice', 'options': ['Introvert', 'Extrovert', 'Ambivert', 'Neither']},
+            {'id': 'q9', 'text': 'What motivates you most?', 'type': 'multiple-choice', 'options': ['Personal growth', 'Helping others', 'Financial success', 'Recognition']},
+            {'id': 'q10', 'text': 'Do you believe in destiny or free will?', 'type': 'yes-no', 'options': ['Destiny', 'Free Will']},
             // --- New Questions (11-20) ---
-            { id: 'q11', text: 'How do you typically handle stress?', type: 'multiple-choice', options: ['Exercise', 'Meditate', 'Talk to friends', 'Work harder'] },
-            { id: 'q12', text: 'Are you generally optimistic or pessimistic?', type: 'multiple-choice', options: ['Optimistic', 'Pessimistic', 'Realistic', 'Depends'] },
-            { id: 'q13', text: 'What role does creativity play in your life?', type: 'multiple-choice', options: ['Essential', 'Important', 'Minor', 'Not at all'] },
-            { id: 'q14', text: 'Do you prefer working alone or in a team?', type: 'multiple-choice', options: ['Alone', 'Team', 'Both', 'Depends on task'] },
-            { id: 'q15', text: 'How do you approach learning new things?', type: 'multiple-choice', options: ['Hands-on', 'Reading', 'Listening', 'Observing'] },
-            { id: 'q16', text: 'Is routine important to you?', type: 'yes-no', options: ['Yes', 'No'] },
-            { id: 'q17', text: 'How do you typically make big decisions?', type: 'multiple-choice', options: ['Logically', 'Intuitively', 'Consult others', 'Delay'] },
-            { id: 'q18', text: 'What kind of challenges do you enjoy?', type: 'multiple-choice', options: ['Intellectual', 'Physical', 'Creative', 'Social'] },
-            { id: 'q19', text: 'Do you learn more from success or failure?', type: 'multiple-choice', options: ['Success', 'Failure', 'Both equally', 'Neither'] },
-            { id: 'q20', text: 'Is personal privacy very important to you?', type: 'yes-no', options: ['Yes', 'No'] }
+            {'id': 'q11', 'text': 'How do you typically handle stress?', 'type': 'multiple-choice', 'options': ['Exercise', 'Meditate', 'Talk to friends', 'Work harder']},
+            {'id': 'q12', 'text': 'Are you generally optimistic or pessimistic?', 'type': 'multiple-choice', 'options': ['Optimistic', 'Pessimistic', 'Realistic', 'Depends']},
+            {'id': 'q13', 'text': 'What role does creativity play in your life?', 'type': 'multiple-choice', 'options': ['Essential', 'Important', 'Minor', 'Not at all']},
+            {'id': 'q14', 'text': 'Do you prefer working alone or in a team?', 'type': 'multiple-choice', 'options': ['Alone', 'Team', 'Both', 'Depends on task']},
+            {'id': 'q15', 'text': 'How do you approach learning new things?', 'type': 'multiple-choice', 'options': ['Hands-on', 'Reading', 'Listening', 'Observing']},
+            {'id': 'q16', 'text': 'Is routine important to you?', 'type': 'yes-no', 'options': ['Yes', 'No']},
+            {'id': 'q17', 'text': 'How do you typically make big decisions?', 'type': 'multiple-choice', 'options': ['Logically', 'Intuitively', 'Consult others', 'Delay']},
+            {'id': 'q18', 'text': 'What kind of challenges do you enjoy?', 'type': 'multiple-choice', 'options': ['Intellectual', 'Physical', 'Creative', 'Social']},
+            {'id': 'q19', 'text': 'Do you learn more from success or failure?', 'type': 'multiple-choice', 'options': ['Success', 'Failure', 'Both equally', 'Neither']},
+            {'id': 'q20', 'text': 'Is personal privacy very important to you?', 'type': 'yes-no', 'options': ['Yes', 'No']}
         ];
 
-        // --- Questionnaire Logic ---
-        const questionnaireForm = document.getElementById('questionnaire-form');
+        // Function to render questions
+        const renderQuestions = () => {
+            const form = document.getElementById('questionnaire-form');
+            form.innerHTML = ''; // Clear existing questions
 
-        const renderQuestionnaire = () => {
-            questionnaireForm.innerHTML = ''; // Clear previous questions
-            questions.forEach(q => {
+            QUESTIONS.forEach(q => {
                 const questionDiv = document.createElement('div');
-                questionDiv.className = 'bg-white bg-opacity-10 p-4 rounded-lg';
+                questionDiv.className = 'bg-white bg-opacity-10 p-4 rounded-lg shadow-inner';
                 questionDiv.innerHTML = `
                     <p class="text-lg font-semibold mb-3">${q.text}</p>
-                    <div class="flex flex-wrap gap-3" id="options-${q.id}">
-                        ${q.options.map(option => `
-                            <label class="inline-flex items-center cursor-pointer">
-                                <input type="radio" name="${q.id}" value="${option}"
-                                    class="form-radio h-5 w-5 text-indigo-400 border-gray-300 focus:ring-indigo-300"
-                                    ${userAnswers[q.id] === option ? 'checked' : ''}>
-                                <span class="ml-2 text-white">${option}</span>
-                            </label>
-                        `).join('')}
-                        <label class="inline-flex items-center cursor-pointer flex-grow">
-                            <input type="radio" name="${q.id}" value="Other"
-                                class="form-radio h-5 w-5 text-indigo-400 border-gray-300 focus:ring-indigo-300"
-                                ${userAnswers[q.id] === 'Other' || (userAnswers[q.id] && !q.options.includes(userAnswers[q.id])) ? 'checked' : ''}>
-                            <span class="ml-2 text-white">Other:</span>
-                            <input type="text" id="${q.id}-other-input"
-                                class="ml-2 p-2 rounded-md bg-white bg-opacity-30 border border-white border-opacity-50 placeholder-gray-200 focus:ring-2 focus:ring-indigo-300 focus:border-transparent outline-none flex-grow"
-                                value="${userAnswers[q.id] === 'Other' || (userAnswers[q.id] && !q.options.includes(userAnswers[q.id])) ? userAnswers[q.id] : ''}"
-                                ${userAnswers[q.id] === 'Other' || (userAnswers[q.id] && !q.options.includes(userAnswers[q.id])) ? 'required' : ''}>
-                        </label>
-                    </div>
                 `;
-                questionnaireForm.appendChild(questionDiv);
 
-                // Add event listeners for radio buttons and other input
-                const optionsContainer = document.getElementById(`options-${q.id}`);
-                const otherInput = document.getElementById(`${q.id}-other-input`);
+                if (q.type === 'multiple-choice' || q.type === 'yes-no') {
+                    const optionsDiv = document.createElement('div');
+                    optionsDiv.className = 'flex flex-wrap gap-3';
+                    q.options.forEach(option => {
+                        const inputId = `${q.id}-${option.replace(/\s+/g, '-').toLowerCase()}`;
+                        optionsDiv.innerHTML += `
+                            <div class="flex items-center">
+                                <input type="radio" id="${inputId}" name="${q.id}" value="${option}"
+                                    class="form-radio h-4 w-4 text-indigo-600 bg-white bg-opacity-30 border-white border-opacity-50 focus:ring-indigo-300">
+                                <label for="${inputId}" class="ml-2 text-white text-md cursor-pointer">${option}</label>
+                            </div>
+                        `;
+                    });
+                    questionDiv.appendChild(optionsDiv);
+                }
+                // Add other question types if needed (e.g., text input)
+                form.appendChild(questionDiv);
+            });
 
-                optionsContainer.addEventListener('change', (e) => {
-                    if (e.target.type === 'radio' && e.target.name === q.id) {
-                        if (e.target.value === 'Other') {
-                            userAnswers[q.id] = otherInput.value.trim() !== '' ? otherInput.value : 'Other';
-                            otherInput.required = true;
-                            otherInput.focus();
-                        } else {
-                            userAnswers[q.id] = e.target.value;
-                            otherInput.required = false;
-                            otherInput.value = ''; // Clear other input if a standard option is selected
-                        }
+            // After rendering, populate with saved answers
+            populateAnswers();
+        };
+
+        // Function to populate answers from localStorage
+        const populateAnswers = () => {
+            QUESTIONS.forEach(q => {
+                const savedAnswer = userAnswers[q.id];
+                if (savedAnswer) {
+                    const radioButtons = document.querySelectorAll(`input[name="${q.id}"][value="${savedAnswer}"]`);
+                    if (radioButtons.length > 0) {
+                        radioButtons[0].checked = true;
                     }
-                });
-
-                otherInput.addEventListener('input', (e) => {
-                    // Ensure 'Other' radio is selected if text is typed
-                    const otherRadio = optionsContainer.querySelector(`input[name="${q.id}"][value="Other"]`);
-                    if (otherRadio && !otherRadio.checked) {
-                        otherRadio.checked = true;
-                    }
-                    userAnswers[q.id] = e.target.value;
-                });
-
-                otherInput.addEventListener('focus', () => {
-                    const otherRadio = optionsContainer.querySelector(`input[name="${q.id}"][value="Other"]`);
-                    if (otherRadio && !otherRadio.checked) {
-                        otherRadio.checked = true;
-                        userAnswers[q.id] = otherInput.value.trim() !== '' ? otherInput.value : 'Other';
-                        otherInput.required = true;
-                    }
-                });
+                }
             });
         };
 
-        document.getElementById('questionnaire-form').addEventListener('submit', async (e) => {
+        // --- Questionnaire Logic ---
+        document.getElementById('submit-answers-button').addEventListener('click', async (e) => {
             e.preventDefault();
             showLoading();
             document.getElementById('questionnaire-message').textContent = '';
 
-            // Validate all questions are answered
-            const allAnswered = questions.every(q => {
-                const answer = userAnswers[q.id];
-                if (answer === undefined || answer === null || answer === '') return false;
-                if (answer === 'Other' && document.getElementById(`${q.id}-other-input`).value.trim() === '') return false;
-                return true;
+            const answers = {};
+            let allAnswered = true;
+
+            QUESTIONS.forEach(q => {
+                const selectedOption = document.querySelector(`input[name="${q.id}"]:checked`);
+                if (selectedOption) {
+                    answers[q.id] = selectedOption.value;
+                } else {
+                    allAnswered = false;
+                }
             });
 
             if (!allAnswered) {
-                showMessage("Please answer all questions before submitting.");
+                showMessage("Please answer all questions before continuing.");
+                hideLoading();
+                return;
+            }
+
+            if (!currentUserId) {
+                showMessage("User ID not found. Please complete your profile first.");
                 hideLoading();
                 return;
             }
@@ -200,35 +192,35 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         userId: currentUserId,
-                        answers: userAnswers
+                        answers: answers
                     })
                 });
                 const result = await response.json();
 
                 if (response.ok) {
-                    localStorage.setItem('userAnswers', JSON.stringify(userAnswers));
+                    localStorage.setItem('userAnswers', JSON.stringify(answers));
                     showMessage('Answers saved successfully!');
-                    // Navigate to the new comparison options page
-                    window.location.href = '/comparison.html';
+                    // Redirect to image description page
+                    window.location.href = '/image_description.html';
                 } else {
                     showMessage(`Error: ${result.error || 'Failed to save answers.'}`, 'error');
                 }
             } catch (error) {
                 console.error('Error saving answers:', error);
-                showMessage('Network error or server unavailable.', 'error');
+                showMessage('Network error or server unavailable. Please check your connection and try again.', 'error');
             } finally {
                 hideLoading();
             }
         });
 
-        // On page load, render the questionnaire
+        // Initialize on page load
         window.onload = () => {
+            // Ensure profile is completed before showing questionnaire
             if (!currentUserId || !localStorage.getItem('userProfile')) {
-                // If no user ID or profile, redirect to profile page
                 window.location.href = '/profile.html';
                 return;
             }
-            renderQuestionnaire();
+            renderQuestions();
         };
     </script>
 </body>
