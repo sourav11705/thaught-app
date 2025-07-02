@@ -105,6 +105,9 @@
     </section>
 
     <script>
+        // API_BASE_URL will now dynamically adjust to the host where the page is served
+        const API_BASE_URL = window.location.origin + '/api';
+
         // Utility functions for UI
         const showLoading = () => document.getElementById('loading-overlay').classList.remove('hidden');
         const hideLoading = () => document.getElementById('loading-overlay').classList.add('hidden');
