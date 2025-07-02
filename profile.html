@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Discover Your Kin - Profile</title>
+    <title>Discover Your Kin - Your Profile</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts - Inter -->
@@ -45,50 +45,51 @@
     </div>
 
     <!-- Profile Page Content -->
-    <section id="profile-page-content" class="flex-col items-center justify-center min-h-screen p-4">
-        <div class="bg-white bg-opacity-20 p-8 rounded-xl shadow-2xl max-w-lg w-full animate-fade-in">
-            <h2 class="text-3xl font-bold mb-6 text-center">Your Profile</h2>
+    <section id="profile-page-content" class="flex-col items-center min-h-screen p-4">
+        <div class="bg-white bg-opacity-20 p-8 rounded-xl shadow-2xl max-w-md w-full my-8 animate-fade-in">
+            <h2 class="text-3xl font-bold mb-6 text-center">Tell Us About Yourself</h2>
+            <p class="text-lg mb-6 text-center">
+                This information helps us understand you better and find your perfect kin!
+            </p>
             <form id="profile-form" class="space-y-4">
                 <div>
-                    <label for="name" class="block text-sm font-medium mb-1">Name</label>
+                    <label for="name" class="block text-sm font-medium mb-1">Your Name</label>
                     <input type="text" id="name"
                         class="w-full p-3 rounded-md bg-white bg-opacity-30 border border-white border-opacity-50 placeholder-gray-200 focus:ring-2 focus:ring-indigo-300 focus:border-transparent outline-none"
-                        required>
+                        placeholder="e.g., Jane Doe" required>
                 </div>
                 <div>
-                    <label for="socialMediaPlatform" class="block text-sm font-medium mb-1">Social Media Platform</label>
-                    <select id="socialMediaPlatform"
-                        class="w-full p-3 rounded-md bg-white bg-opacity-30 border border-white border-opacity-50 text-white focus:ring-2 focus:ring-indigo-300 focus:border-transparent outline-none"
-                        required>
-                        <option value="" disabled selected class="text-gray-800">Select a platform</option>
-                        <option value="Twitter" class="text-gray-800">Twitter</option>
-                        <option value="Instagram" class="text-gray-800">Instagram</option>
-                        <option value="LinkedIn" class="text-gray-800">LinkedIn</option>
-                        <option value="Facebook" class="text-gray-800">Facebook</option>
-                        <option value="Discord" class="text-gray-800">Discord</option>
-                        <option value="Other" class="text-gray-800">Other</option>
-                    </select>
-                </div>
-                <div id="social-media-id-container" class="hidden">
-                    <label for="socialMediaId" class="block text-sm font-medium mb-1">Your Social Media ID/Handle</label>
-                    <input type="text" id="socialMediaId"
+                    <label for="email" class="block text-sm font-medium mb-1">Email</label>
+                    <input type="email" id="email"
                         class="w-full p-3 rounded-md bg-white bg-opacity-30 border border-white border-opacity-50 placeholder-gray-200 focus:ring-2 focus:ring-indigo-300 focus:border-transparent outline-none"
-                        required>
+                        placeholder="e.g., jane.doe@example.com" required>
                 </div>
                 <div>
                     <label for="gender" class="block text-sm font-medium mb-1">Gender</label>
                     <select id="gender"
                         class="w-full p-3 rounded-md bg-white bg-opacity-30 border border-white border-opacity-50 text-white focus:ring-2 focus:ring-indigo-300 focus:border-transparent outline-none"
                         required>
-                        <option value="" disabled selected class="text-gray-800">Select your gender</option>
-                        <option value="Male" class="text-gray-800">Male</option>
-                        <option value="Female" class="text-gray-800">Female</option>
-                        <option value="Other" class="text-gray-800">Other</option>
-                        <option value="Prefer not to say" class="text-gray-800">Prefer not to say</option>
+                        <option value="" disabled selected class="text-gray-400">Select your gender</option>
+                        <option value="male" class="text-gray-800">Male</option>
+                        <option value="female" class="text-gray-800">Female</option>
+                        <option value="other" class="text-gray-800">Other</option>
+                        <option value="prefer_not_say" class="text-gray-800">Prefer not to say</option>
                     </select>
                 </div>
-                <button type="submit" id="save-profile-button"
-                    class="w-full bg-white text-indigo-700 font-bold py-3 px-6 rounded-full shadow-lg hover:bg-indigo-100 transform hover:scale-105 transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-300">
+                <div>
+                    <label for="socialMediaPlatform" class="block text-sm font-medium mb-1">Preferred Social Media Platform (Optional)</label>
+                    <input type="text" id="socialMediaPlatform"
+                        class="w-full p-3 rounded-md bg-white bg-opacity-30 border border-white border-opacity-50 placeholder-gray-200 focus:ring-2 focus:ring-indigo-300 focus:border-transparent outline-none"
+                        placeholder="e.g., Instagram, Twitter, LinkedIn">
+                </div>
+                <div>
+                    <label for="socialMediaId" class="block text-sm font-medium mb-1">Your Social Media ID (Optional)</label>
+                    <input type="text" id="socialMediaId"
+                        class="w-full p-3 rounded-md bg-white bg-opacity-30 border border-white border-opacity-50 placeholder-gray-200 focus:ring-2 focus:ring-indigo-300 focus:border-transparent outline-none"
+                        placeholder="e.g., @janedoe123">
+                </div>
+                <button type="submit" id="submit-profile-button"
+                    class="w-full bg-white text-indigo-700 font-bold py-3 px-6 rounded-full shadow-lg hover:bg-indigo-100 transform hover:scale-105 transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-300 mt-6">
                     Save Profile & Continue
                 </button>
             </form>
@@ -97,7 +98,8 @@
     </section>
 
     <script>
-        const API_BASE_URL = 'http://localhost:5000/api'; // Ensure this matches your Flask backend URL
+        // API_BASE_URL will now dynamically adjust to the host where the page is served
+        const API_BASE_URL = window.location.origin + '/api';
 
         // Utility functions for UI
         const showLoading = () => document.getElementById('loading-overlay').classList.remove('hidden');
@@ -114,43 +116,31 @@
 
         // --- Global State Variables (loaded from localStorage) ---
         let currentUserId = localStorage.getItem('userId') || null;
-        let userProfile = JSON.parse(localStorage.getItem('userProfile')) || null;
+        let userProfile = JSON.parse(localStorage.getItem('userProfile')) || {};
 
-        // Generate a UUID for anonymous user IDs if not already present
-        const ensureUserId = () => {
-            if (!currentUserId) {
-                currentUserId = crypto.randomUUID();
-                localStorage.setItem('userId', currentUserId);
-            }
-        };
-
-        // --- Profile Page Logic ---
-        const socialMediaPlatformSelect = document.getElementById('socialMediaPlatform');
-        const socialMediaIdContainer = document.getElementById('social-media-id-container');
-        const socialMediaIdInput = document.getElementById('socialMediaId');
-
-        socialMediaPlatformSelect.addEventListener('change', () => {
-            if (socialMediaPlatformSelect.value) {
-                socialMediaIdContainer.classList.remove('hidden');
-                socialMediaIdInput.required = true;
-            } else {
-                socialMediaIdContainer.classList.add('hidden');
-                socialMediaIdInput.required = false;
-                socialMediaIdInput.value = '';
-            }
-        });
-
+        // --- Profile Logic ---
         document.getElementById('profile-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             showLoading();
             document.getElementById('profile-message').textContent = '';
 
-            const name = document.getElementById('name').value;
-            const platform = socialMediaPlatformSelect.value;
-            const id = socialMediaIdInput.value;
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const socialMediaPlatform = document.getElementById('socialMediaPlatform').value.trim();
+            const socialMediaId = document.getElementById('socialMediaId').value.trim();
             const gender = document.getElementById('gender').value;
 
-            ensureUserId(); // Ensure userId before sending profile
+            if (!name || !email || !gender) {
+                showMessage("Please fill in all required fields (Name, Email, Gender).");
+                hideLoading();
+                return;
+            }
+
+            if (!currentUserId) {
+                showMessage("User ID not found. Please go back to the home page and start again.");
+                hideLoading();
+                return;
+            }
 
             try {
                 const response = await fetch(`${API_BASE_URL}/register_user`, {
@@ -159,43 +149,44 @@
                     body: JSON.stringify({
                         userId: currentUserId,
                         name: name,
-                        email: "not_provided_" + currentUserId + "@example.com", // Dummy email for database unique constraint
-                        socialMediaPlatform: platform,
-                        socialMediaId: id,
+                        email: email,
+                        socialMediaPlatform: socialMediaPlatform,
+                        socialMediaId: socialMediaId,
                         gender: gender
                     })
                 });
                 const result = await response.json();
 
                 if (response.ok) {
-                    userProfile = { name, socialMediaPlatform: platform, socialMediaId: id, gender }; // Removed email from local storage profile
-                    localStorage.setItem('userProfile', JSON.stringify(userProfile));
+                    localStorage.setItem('userProfile', JSON.stringify({ name, email, socialMediaPlatform, socialMediaId, gender }));
                     showMessage('Profile saved successfully!');
-                    // Navigate to the questionnaire page
+                    // Redirect to questionnaire page
                     window.location.href = '/questionnaire.html';
                 } else {
                     showMessage(`Error: ${result.error || 'Failed to save profile.'}`, 'error');
                 }
             } catch (error) {
                 console.error('Error saving profile:', error);
-                showMessage('Network error or server unavailable.', 'error');
+                showMessage('Network error or server unavailable. Please check your connection and try again.', 'error');
             } finally {
                 hideLoading();
             }
         });
 
-        // Populate profile form if data exists in localStorage on page load
+        // Populate form if data exists in localStorage on page load
         window.onload = () => {
-            if (userProfile) {
-                document.getElementById('name').value = userProfile.name || '';
-                document.getElementById('socialMediaPlatform').value = userProfile.socialMediaPlatform || '';
-                if (userProfile.socialMediaPlatform) {
-                    socialMediaIdContainer.classList.remove('hidden');
-                    socialMediaIdInput.required = true;
-                }
-                socialMediaIdInput.value = userProfile.socialMediaId || '';
-                document.getElementById('gender').value = userProfile.gender || '';
+            // Ensure userId exists before attempting to load profile data
+            if (!currentUserId) {
+                // If no userId, redirect to index to generate one
+                window.location.href = '/index.html';
+                return;
             }
+
+            if (userProfile.name) document.getElementById('name').value = userProfile.name;
+            if (userProfile.email) document.getElementById('email').value = userProfile.email;
+            if (userProfile.socialMediaPlatform) document.getElementById('socialMediaPlatform').value = userProfile.socialMediaPlatform;
+            if (userProfile.socialMediaId) document.getElementById('socialMediaId').value = userProfile.socialMediaId;
+            if (userProfile.gender) document.getElementById('gender').value = userProfile.gender;
         };
     </script>
 </body>
