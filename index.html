@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Discover Your Kin - Home</title>
+    <title>Discover Your Kin</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts - Inter -->
@@ -44,19 +44,24 @@
         </div>
     </div>
 
-    <!-- Home Page (Slideshow) Content -->
-    <section id="home-page-content" class="flex-col items-center justify-center min-h-screen p-4 active">
-        <div class="bg-white bg-opacity-20 p-8 rounded-xl shadow-2xl text-center max-w-md w-full animate-fade-in">
-            <h1 id="slideshow-title" class="text-4xl font-extrabold mb-4"></h1>
-            <p id="slideshow-description" class="text-lg mb-8"></p>
-            <button id="get-started-button"
+    <!-- Main Content -->
+    <section class="flex flex-col items-center justify-center min-h-screen p-4">
+        <div class="bg-white bg-opacity-20 p-8 rounded-xl shadow-2xl max-w-md w-full text-center animate-fade-in">
+            <h1 class="text-5xl font-extrabold mb-4">Discover Your Kin</h1>
+            <p class="text-xl text-gray-200 mb-8">
+                Find out who thinks like you. Connect with people based on shared thoughts and experiences.
+            </p>
+            <button id="start-button"
                 class="bg-white text-indigo-700 font-bold py-3 px-8 rounded-full shadow-lg hover:bg-indigo-100 transform hover:scale-105 transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-300">
-                Get Started
+                Start Your Journey
             </button>
         </div>
     </section>
 
     <script>
+        // API_BASE_URL will now dynamically adjust to the host where the page is served
+        const API_BASE_URL = window.location.origin + '/api';
+
         // Utility functions for UI
         const showLoading = () => document.getElementById('loading-overlay').classList.remove('hidden');
         const hideLoading = () => document.getElementById('loading-overlay').classList.add('hidden');
@@ -70,41 +75,22 @@
         const hideMessage = () => document.getElementById('message-box').classList.add('hidden');
         document.getElementById('message-ok-button').addEventListener('click', hideMessage);
 
-        // --- Slideshow Logic ---
-        const slideshowContent = [
-            { title: "Welcome to Discover Your Kin!", description: "Find people who share your unique thoughts and life experiences." },
-            { title: "How it Works: Profile", description: "Start by creating your profile. We'll ask for some basic details and your preferred social media." },
-            { title: "How it Works: Questionnaire", description: "Answer a series of thought-provoking questions about your past, values, and thinking process." },
-            { title: "One-to-One Comparison", description: "Get an instant similarity score with a randomly matched individual. Easily share the unique bond you've discovered!" },
-            { title: "Global Discoveries", description: "Explore the wider community and see how your unique thought process aligns with others. Find highly similar minds and connect directly through their shared social media profiles!" }
-        ];
-        let currentSlideIndex = 0;
-        let slideshowInterval;
+        document.getElementById('start-button').addEventListener('click', () => {
+            // Check if userId already exists in localStorage
+            let userId = localStorage.getItem('userId');
 
-        const updateSlideshow = () => {
-            document.getElementById('slideshow-title').textContent = slideshowContent[currentSlideIndex].title;
-            document.getElementById('slideshow-description').textContent = slideshowContent[currentSlideIndex].description;
-            currentSlideIndex = (currentSlideIndex + 1) % slideshowContent.length;
-        };
+            if (!userId) {
+                // Generate a new unique ID if not found
+                userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('userId', userId);
+                console.log('New User ID generated:', userId);
+            } else {
+                console.log('Existing User ID:', userId);
+            }
 
-        // --- Initialization ---
-        window.onload = () => {
-            // Start slideshow
-            updateSlideshow();
-            slideshowInterval = setInterval(updateSlideshow, 5000);
-
-            document.getElementById('get-started-button').addEventListener('click', () => {
-                clearInterval(slideshowInterval); // Stop slideshow
-                // Check if user already has a profile and answers
-                if (localStorage.getItem('userId') && localStorage.getItem('userProfile') && localStorage.getItem('userAnswers')) {
-                    window.location.href = '/comparison.html'; // Go to the new comparison hub if everything is setup
-                } else if (localStorage.getItem('userId') && localStorage.getItem('userProfile')) {
-                    window.location.href = '/questionnaire.html'; // Go to questionnaire if profile exists
-                } else {
-                    window.location.href = '/profile.html'; // Start with profile if new user
-                }
-            });
-        };
+            // Redirect to the profile page
+            window.location.href = '/profile.html';
+        });
     </script>
 </body>
 </html>
