@@ -11,8 +11,8 @@ from datetime import datetime
 app = Flask(__name__, static_folder='.') # Serve static files from the current directory
 CORS(app) # Enable CORS for all routes
 
-# --- FREE SQL DATABASE (MYSQL) CONNECTION DETAILS (IMPORTANT: DO NOT HARDCODE IN PRODUCTION) ---
-# These will be loaded from PythonAnywhere's environment variables
+# --- FREE SQL DATABASE (MYSQL) CONNECTION DETAILS ---
+# These will be loaded from Render's environment variables
 DB_HOST = os.environ.get('DB_HOST')
 DB_NAME = os.environ.get('DB_NAME')
 DB_USER = os.environ.get('DB_USER')
@@ -150,7 +150,6 @@ def clear_all_data():
     try:
         cur = conn.cursor()
         # Delete from child tables first if there are foreign key constraints
-        # (ON DELETE CASCADE should handle this, but explicit deletion is safer)
         cur.execute("DELETE FROM favorites;")
         cur.execute("DELETE FROM image_descriptions;")
         cur.execute("DELETE FROM answers;")
@@ -169,6 +168,7 @@ def clear_all_data():
 
 # --- Routes for serving HTML pages ---
 @app.route('/')
+@app.route('/index.html') # Added this route to handle direct requests for /index.html
 def serve_index():
     return send_from_directory('.', 'index.html')
 
