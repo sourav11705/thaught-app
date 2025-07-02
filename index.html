@@ -91,6 +91,48 @@
             // Redirect to the profile page
             window.location.href = '/profile.html';
         });
+
+        // --- Handle incoming shared comparison links ---
+        window.onload = () => {
+            const params = new URLSearchParams(window.location.search);
+            const mode = params.get('mode');
+            const user1 = params.get('user1');
+            const user2 = params.get('user2');
+
+            if (mode === 'compare' && user1) {
+                // Store shared comparison IDs in localStorage
+                localStorage.setItem('sharedCompareUser1', user1);
+                if (user2) {
+                    localStorage.setItem('sharedCompareUser2', user2);
+                } else {
+                    // If only user1 is provided, it means someone shared their own profile for others to compare with
+                    localStorage.removeItem('sharedCompareUser2'); // Ensure no stale user2
+                }
+                
+                // Now, proceed with the normal flow (profile -> questionnaire -> etc.)
+                // The one_to_one.html page will pick up these localStorage values when it loads.
+                let userId = localStorage.getItem('userId');
+                if (!userId) {
+                    userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                    localStorage.setItem('userId', userId);
+                }
+
+                // Redirect to profile or the next incomplete step
+                if (!localStorage.getItem('userProfile')) {
+                    window.location.href = '/profile.html';
+                } else if (!localStorage.getItem('userAnswers')) {
+                    window.location.href = '/questionnaire.html';
+                } else if (!localStorage.getItem('userImageDescription')) {
+                    window.location.href = '/image_description.html';
+                } else if (!localStorage.getItem('userFavorites')) {
+                    window.location.href = '/favorites.html';
+                } else {
+                    // If all steps are completed, go directly to one_to_one.html
+                    window.location.href = '/one_to_one.html';
+                }
+            }
+            // If no shared link parameters, proceed with default index.html behavior
+        };
     </script>
 </body>
 </html>
