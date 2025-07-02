@@ -53,11 +53,11 @@
                 focusing on your initial impression and any details that stand out to you.
             </p>
             <div class="flex justify-center mb-6">
-                <!-- IMPORTANT: Replace 'YOUR_GITHUB_IMAGE_URL_HERE' with the direct URL to your image on GitHub -->
-                <img src="https://github.com/sourav11705/web_app/blob/main/ChatGPT%20Image%20Jul%201,%202025,%2010_48_34%20PM.png?raw=true" alt="Optical Illusion" class="rounded-lg shadow-lg max-w-full h-auto" onerror="this.onerror=null;this.src='https://placehold.co/400x300/CCCCCC/000000?text=Image+Not+Loaded'; console.error('Failed to load image from GitHub. Using fallback placeholder.');">
+                <!-- Image source with fallback -->
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Rubin_Vase.svg/400px-Rubin_Vase.svg.png" alt="Rubin's Vase Illusion" class="rounded-lg shadow-lg max-w-full h-auto" onerror="this.onerror=null;this.src='https://placehold.co/400x300/CCCCCC/000000?text=Image+Load+Error'; console.error('Failed to load the illusion image. Using fallback placeholder.');">
             </div>
             <p class="text-sm text-center text-gray-300 mb-6">
-                <span class="font-bold">If the image above still doesn't load:</span> Please describe what you know about optical illusions, or what you perceive in the placeholder image (e.g., a grey box with "Image Not Loaded").
+                <span class="font-bold">If the image above does not load:</span> Please describe what you know about optical illusions, or what you perceive in the placeholder image (e.g., a grey box with "Image Load Error").
             </p>
             <form id="image-description-form" class="space-y-4">
                 <div>
@@ -76,7 +76,8 @@
     </section>
 
     <script>
-        const API_BASE_URL = 'http://localhost:5000/api'; // Ensure this matches your Flask backend URL
+        // API_BASE_URL will now dynamically adjust to the host where the page is served
+        const API_BASE_URL = window.location.origin + '/api';
 
         // Utility functions for UI
         const showLoading = () => document.getElementById('loading-overlay').classList.remove('hidden');
@@ -136,7 +137,7 @@
                 }
             } catch (error) {
                 console.error('Error saving image description:', error);
-                showMessage('Network error or server unavailable.', 'error');
+                showMessage('Network error or server unavailable. Please check your connection and try again.', 'error');
             } finally {
                 hideLoading();
             }
