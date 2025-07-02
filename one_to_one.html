@@ -149,10 +149,6 @@
 
         // Function to update share button state
         const updateShareButtonState = () => {
-            // The share button should be enabled if the current user has a profile and answers,
-            // regardless of whether a specific comparison result is currently displayed.
-            // If a comparison result is displayed, it will share that specific comparison.
-            // If not, it will share the current user's profile link for others to compare.
             if (currentUserId && Object.keys(userAnswers).length > 0) {
                 shareComparisonButton.disabled = false;
                 shareComparisonButton.classList.remove('opacity-50', 'cursor-not-allowed');
@@ -194,12 +190,18 @@
             let payload = { userId: currentUserId, targetUserId: targetUserId }; // Default payload
             let titleText = 'One-to-One Comparison';
 
-            if (user1IdForShared && targetUserId) {
-                // If it's a shared link, the payload needs to reflect the two users from the URL
-                payload = { user1Id: user1IdForShared, user2Id: targetUserId };
+            // This part now uses localStorage values if they exist for shared links
+            const storedUser1 = localStorage.getItem('sharedCompareUser1');
+            const storedUser2 = localStorage.getItem('sharedCompareUser2');
+
+            if (storedUser1 && storedUser2) {
+                payload = { user1Id: storedUser1, user2Id: storedUser2 };
                 titleText = 'Shared Comparison';
+                // Clear the stored IDs after use to prevent re-comparison on next visit
+                localStorage.removeItem('sharedCompareUser1');
+                localStorage.removeItem('sharedCompareUser2');
             } else if (targetUserId) {
-                // If targetUserId is provided without user1IdForShared, it's a direct comparison
+                // If targetUserId is provided (e.g., from global comparison), it's a direct comparison
                 payload = { userId: currentUserId, targetUserId: targetUserId };
                 titleText = 'One-to-One Comparison';
             } else {
@@ -233,10 +235,9 @@
                         let displaySocialMedia = '';
                         let displayUserIds;
 
-                        if (user1IdForShared && targetUserId) {
-                            // For shared links, show both names and IDs from the link
+                        if (storedUser1 && storedUser2) { // For shared links handled via localStorage
                             displayNames = `${result.user1Name || 'User 1'} vs ${result.otherUserName || 'User 2'}`;
-                            displayUserIds = `User IDs: ${user1IdForShared} & ${targetUserId}`;
+                            displayUserIds = `User IDs: ${storedUser1} & ${storedUser2}`;
                         } else {
                             // For random match or direct comparison, show current user vs other user
                             const currentUserProfile = JSON.parse(localStorage.getItem('userProfile')) || {};
@@ -288,9 +289,11 @@
             // If a specific comparison is displayed, generate its link.
             // Otherwise, generate a link for the current user's profile.
             if (currentComparisonOtherUserId && currentComparisonPercentage > 0) {
-                 return encodeURIComponent(`Discover Your Kin! I just found out I'm ${currentComparisonPercentage}% similar to ${currentComparisonOtherUserName}! Find your kin too: ${window.location.origin}/one_to_one.html?mode=compare&user1=${currentUserId}&user2=${currentComparisonOtherUserId}`);
+                 // Link now points to index.html with parameters
+                 return encodeURIComponent(`Discover Your Kin! I just found out I'm ${currentComparisonPercentage}% similar to ${currentComparisonOtherUserName}! Find your kin too: ${window.location.origin}/index.html?mode=compare&user1=${currentUserId}&user2=${currentComparisonOtherUserId}`);
             } else {
-                return encodeURIComponent(`Hey! Check out Discover Your Kin. You can compare how similar you are to me! Click here: ${window.location.origin}/one_to_one.html?mode=compare&user1=${currentUserId}`);
+                // Link now points to index.html with parameters
+                return encodeURIComponent(`Hey! Check out Discover Your Kin. You can compare how similar you are to me! Click here: ${window.location.origin}/index.html?mode=compare&user1=${currentUserId}`);
             }
         };
 
@@ -307,13 +310,13 @@
             let shareSummary;
 
             if (currentComparisonOtherUserId && currentComparisonPercentage > 0) {
-                // Sharing a specific comparison result
-                linkToShare = `${window.location.origin}/one_to_one.html?mode=compare&user1=${currentUserId}&user2=${currentComparisonOtherUserId}`;
+                // Sharing a specific comparison result, link points to index.html
+                linkToShare = `${window.location.origin}/index.html?mode=compare&user1=${currentUserId}&user2=${currentComparisonOtherUserId}`;
                 shareTitle = `I'm ${currentComparisonPercentage}% similar to ${currentComparisonOtherUserName} on Discover Your Kin!`;
                 shareSummary = `Find out who thinks like you. Discover Your Kin helps you connect with people based on shared thoughts and experiences.`;
             } else {
-                // Sharing your own profile link for others to compare with you
-                linkToShare = `${window.location.origin}/one_to_one.html?mode=compare&user1=${currentUserId}`;
+                // Sharing your own profile link for others to compare with you, link points to index.html
+                linkToShare = `${window.location.origin}/index.html?mode=compare&user1=${currentUserId}`;
                 shareTitle = `Discover Your Kin - Compare Your Thoughts With Me!`;
                 shareSummary = `Hey! Check out Discover Your Kin. You can compare how similar you are to me!`;
             }
@@ -371,33 +374,21 @@
 
             const params = new URLSearchParams(window.location.search);
             const mode = params.get('mode');
-            const user1 = params.get('user1'); // User who generated the link (your ID)
-            const user2 = params.get('user2'); // User who clicked the link (their ID)
+            const targetUserIdFromUrl = params.get('targetUserId'); // This is for direct comparison from global list
 
-            if (mode === 'compare' && user1 && user2) {
-                // If it's a shared comparison link, perform comparison between user1 and user2
-                // Note: The 'user1' in the URL is the person who shared their profile.
-                // The 'user2' in the URL is the person who clicked the link (the current user).
-                // We need to ensure the comparison is always from the perspective of the current user.
-                // If the current user is user1 from the URL, then the other user is user2.
-                // If the current user is user2 from the URL, then the other user is user1.
-                let compareUser1 = user1;
-                let compareUser2 = user2;
+            // Check if there are stored shared comparison IDs from index.html
+            const storedSharedUser1 = localStorage.getItem('sharedCompareUser1');
+            const storedSharedUser2 = localStorage.getItem('sharedCompareUser2');
 
-                if (currentUserId === user2) { // If current user is the one who clicked the link
-                    compareUser1 = user2; // Current user
-                    compareUser2 = user1; // The person who shared
-                } else if (currentUserId !== user1) {
-                    // This scenario means the current user is neither user1 nor user2 from the link.
-                    // This could happen if someone else's link is opened by a third party.
-                    // In this case, we should prompt the user to share their own profile.
-                    displaySharePrompt();
-                    return;
-                }
-                
-                performOneToOneComparison(compareUser2, compareUser1); // Pass user1Id as the initiator of the link
+            if (mode === 'direct' && targetUserIdFromUrl) {
+                // This is a direct comparison initiated from the global list
+                performOneToOneComparison(targetUserIdFromUrl);
+            } else if (storedSharedUser1 && storedSharedUser2) {
+                // This is a shared comparison initiated from index.html
+                // The backend will handle which is user1 and user2 for comparison logic
+                performOneToOneComparison(storedSharedUser2, storedSharedUser1); // Pass user2 as target, user1 as initiator
             } else {
-                // If not a shared link, display the prompt to share profile
+                // Default behavior: prompt to share profile or find a random match
                 displaySharePrompt();
             }
         };
